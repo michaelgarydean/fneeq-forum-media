@@ -27,12 +27,16 @@
  * @TODO get the attachment ID
  * @TODO Test hooks.
  * @TODO Add error handling in case no term is found for the forum, or create a term for the forum.
+ * @TODO Check that secteur is acctually registered to the attachment post type
  */
 
-add_action( 'add_attachment', 'fneeq_assign_secteur_to_media' );
+add_action( 'add_attachment', 'fneeq_add_taxonomy_terms_to_topic_media' );
 
-function fneeq_assign_secteur_to_media( $attachment_id) {
-        $taxonomy_name = 'category';
+function fneeq_add_taxonomy_terms_to_topic_media( $attachment_id) {
+        //Machine names (slugs) of the taxonomies we'll add terms from
+	$taxonomies = array();
+	$taxonomies['secteur'] = 'secteur';
+	$taxonomies['category'] = 'category';
 
 	//Get the WP_Post object for the current attachment that has been uploaded.
 	$attachment = get_post( $attachment_id );
@@ -47,11 +51,18 @@ function fneeq_assign_secteur_to_media( $attachment_id) {
 		//For readability. The parent post is a topic.
 		$topic_post = $post_parent;	
 		
-		//Get the forum name of the topic
+		//Get the forum name of the topic. This is the term to add for the secteur taxonomy.
 		$forum_name = bbp_get_forum( $topic_post->post_parent )->post_name;
+
+		//Get the category selected in the front end
+		$category_id = intval( $_POST['cat'] );             //Get value from the <select> element as an interger
+
+		//Tag the attachment with the name of the forum as the secteur
+		wp_set_object_terms( $attachment_id, $forum_name, $taxonomies['secteur'], true );
 	
-		//Tag the attachment with the name of the forum as a category	
-		var_dump(wp_set_object_terms( $attachment_id, $forum_name, $taxonomy_name, true ));
-		die;
+		//If the media was tagged in the front end, add it as a category	
+		if( !empty( $category_id ) ) {
+			wp_set_object_terms( $attachment_id, array( $category_id ), $taxonomies['category'], true );
+		}
 	}
 }
